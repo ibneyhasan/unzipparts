@@ -1,0 +1,40 @@
+#!/usr/bin/env jython
+
+import sys, jarray, os
+from java.io import FileInputStream
+from java.io import SequenceInputStream
+from java.io import FileOutputStream
+from java.util.zip import ZipInputStream
+
+def main():
+  paths = sys.argv[1:]
+  stream = FileInputStream(paths[0])
+  try:
+    for path in paths[1:]:
+      stream = SequenceInputStream(stream, FileInputStream(path))
+    stream = ZipInputStream(stream)
+    while True:
+      entry = stream.getNextEntry()
+      if entry is None:
+        print >> sys.stderr, 'EOF'
+        break
+      entryname = entry.getName()
+      print >> sys.stderr, entryname
+      if entry.isDirectory():
+        os.mkdir(entryname)
+      else:
+        out = FileOutputStream(entryname)
+        try:
+          v = jarray.zeros(1024, 'b')
+          while True:
+            n = stream.read(v)
+            if -1 == n:
+              break
+            out.write(v, 0, n)
+        finally:
+          out.close()
+  finally:
+    stream.close()
+
+if '__main__' == __name__:
+  main()
